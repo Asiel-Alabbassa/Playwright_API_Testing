@@ -1,67 +1,110 @@
-import { test, expect } from '@playwright/test'
 
-test('API PUT Request', async ({ request }) => {
+import { test, expect } from '@playwright/test';
 
-    const response = await request.put('https://reqres.in/api/users/2', {
-        data:
-        {
-            "name": "Asiel",
-            "job": "QA"
-        }
-
-    })
-
-    expect(response.status()).toBe(200)
-
-    const text = await response.text()
-
-    expect(text).toContain('Asiel')
-
-    console.log(await response.json())
-})
-
-test('API POST Request', async ({ request }) => {
-
-    const response = await request.post('https://reqres.in/api/users', {
-        data:
-        {
-            "name": "Asiel",
-            "job": "QA"
-        }
-
-    })
-
-    expect(response.status()).toBe(201)
-
-    const text = await response.text()
-
-    expect(text).toContain('Asiel')
-
-    console.log(await response.json())
-})
+test('GET users from JSONPlaceholder', async () => {
+  const apiContext = await test.request.newContext();
+  const response = await apiContext.get('https://jsonplaceholder.typicode.com/users');
+  expect(response.status()).toBe(200);
+  const data = await response.json();
+  expect(data.length).toBeGreaterThan(0);
+});
 
 
-test('API GET Request', async ({ request }) => {
+test('Create a new user via POST', async () => {
+  const apiContext = await test.request.newContext();
 
-    const response = await request.get('https://reqres.in/api/users/2')
+  const response = await apiContext.post('https://jsonplaceholder.typicode.com/users', {
+    data: {
+          name: 'Billy LZ',
+          username: 'BillLZ',
+          email: 'Bill@example.com'
+    }
+  });
 
-    expect(response.status()).toBe(200)
+  expect(response.status()).toBe(201); // JSONPlaceholder returns 201 for successful POST
+  const responseBody = await response.json();
 
-    const text = await response.text()
+  console.log('Created user:', responseBody);
 
-    expect(text).toContain('Janet')
+  expect(responseBody).toHaveProperty('id');
+  expect(responseBody).toHaveProperty('name');
+  expect(responseBody).toHaveProperty('username');
+  expect(responseBody).toHaveProperty('email');
+ 
+});
 
-    // to fail the test use a value that doesnt exists in the API response 
-    // expect(text).toContain('john')
+test('PUT request to update user', async ({request}) => {
+  //const apiContext = await request.newContext();
 
-    console.log(await response.json())
-})
+  const response = await request.put('https://jsonplaceholder.typicode.com/users/1', {
+    data: {
+      id: 1,
+      name: 'Asiel QA',
+      username: 'asielqa',
+      email: 'asiel@example.com',
+      phone: '123-456-7890',
+      website: 'asielqa.dev'
+    },
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  });
 
-test('API DELETE Request', async ({ request }) => {
+  const responseBody = await response.json();
+  console.log('PUT response:', responseBody);
 
-    const response = await request.delete('https://reqres.in/api/users/2')
+  expect(response.ok()).toBeTruthy();
+  expect(responseBody.name).toBe('Asiel QA');
+  expect(response.status()).toBe(200)
+});
 
-    expect(response.status()).toBe(204)
+test('GET user with ID 1', async () => {
+  const apiContext = await test.request.newContext();
+  const response = await apiContext.get('https://jsonplaceholder.typicode.com/users/1');
+  expect(response.status()).toBe(200);
 
-    
-})
+  const user = await response.json();
+  console.log('Fetched user:', user);
+
+  expect(response.status()).toBe(200)
+  expect(user).toMatchObject({
+    id: 1,
+    name: expect.any(String),
+    email: expect.any(String)
+  });
+});
+
+
+
+test('PATCH request to update user name', async ({request}) => {
+  //const apiContext = await request.newContext();
+
+  const response = await request.patch('https://jsonplaceholder.typicode.com/users/1', {
+    data: {
+      name: 'Asiel QA Updated'
+    },
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  });
+
+  const responseBody = await response.json();
+  console.log('PATCH response:', responseBody);
+
+  expect(response.ok()).toBeTruthy();
+  expect(responseBody.name).toBe('Asiel QA Updated');
+});
+
+test('Delete a user via DELETE', async () => {
+  const apiContext = await test.request.newContext();
+
+  const response = await apiContext.delete('https://jsonplaceholder.typicode.com/users/1');
+
+  expect(response.status()).toBe(200); // JSONPlaceholder returns 200 for successful DELETE
+  const responseBody = await response.json();
+
+  console.log('Deleted user response:', responseBody);
+
+  // JSONPlaceholder returns an empty object for DELETE
+  expect(responseBody).toEqual({});
+});
